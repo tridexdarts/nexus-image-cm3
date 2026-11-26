@@ -1,0 +1,12 @@
+#!/bin/sh
+# Runs once on the first boot of a freshly flashed nexus image
+# (triggered by /etc/nexus-firstboot, which build.sh creates).
+set -e
+echo "[nexus-firstboot] Generating new SSH host keys"
+rm -f /etc/ssh/ssh_host_*
+ssh-keygen -A
+echo "[nexus-firstboot] Generating a new machine-id"
+rm -f /etc/machine-id /var/lib/dbus/machine-id
+systemd-machine-id-setup
+rm -f /etc/nexus-firstboot
+echo "[nexus-firstboot] Done"

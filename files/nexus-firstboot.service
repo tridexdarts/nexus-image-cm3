@@ -1,0 +1,14 @@
+[Unit]
+Description=nexus: new SSH host keys and machine-id on first boot
+DefaultDependencies=no
+ConditionPathExists=/etc/nexus-firstboot
+After=local-fs.target
+Before=sysinit.target ssh.service
+
+[Service]
+Type=oneshot
+StandardOutput=journal+console
+ExecStart=/usr/local/sbin/nexus-firstboot
+
+[Install]
+WantedBy=sysinit.target
