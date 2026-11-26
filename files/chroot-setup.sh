@@ -93,6 +93,15 @@ apt-get update
 "${APT[@]}" install $NEXUS_PACKAGES
 rm -f /root/nexus-archive-keyring.deb
 
+log "Automatic updates of the Tridex Nexus packages (unattended-upgrades, hourly)"
+"${APT[@]}" install unattended-upgrades
+# Only nexus-auto-upgrade.timer installs updates; keep Debian's apt-daily timers out of it
+systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+systemctl enable nexus-auto-upgrade.timer
+# Verify that the origin filter matches the Nexus repository
+apt-get update
+{ unattended-upgrade --dry-run --debug 2>&1 | grep -E "Allowed origins" | head -3; } || true
+
 # ---------------------------------------------------------------------------
 log "Hostname $NEXUS_HOSTNAME"
 echo "$NEXUS_HOSTNAME" > /etc/hostname

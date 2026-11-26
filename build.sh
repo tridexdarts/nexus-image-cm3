@@ -111,6 +111,8 @@ install -m 644 "$WORK/radxa-archive-keyring.deb" "$MNT/root/radxa-archive-keyrin
 install -m 644 "$WORK/nexus-archive-keyring.deb" "$MNT/root/nexus-archive-keyring.deb"
 install -m 755 files/nexus-firstboot "$MNT/usr/local/sbin/nexus-firstboot"
 install -m 644 files/nexus-firstboot.service "$MNT/etc/systemd/system/nexus-firstboot.service"
+install -m 644 files/nexus-auto-upgrade.service files/nexus-auto-upgrade.timer "$MNT/etc/systemd/system/"
+install -m 644 files/52nexus-unattended-upgrades "$MNT/etc/apt/apt.conf.d/52nexus-unattended-upgrades"
 install -m 755 files/chroot-setup.sh "$MNT/root/nexus-chroot-setup.sh"
 
 # ---------------------------------------------------------------------------
@@ -199,6 +201,7 @@ for p in $NEXUS_PACKAGES; do
 	grep -qx "Package: $p" "$MNT/var/lib/dpkg/status" || die "Package $p is not installed"
 done
 ls "$MNT"/etc/systemd/system/*/dietpi-autologin.conf 2>/dev/null && die "Root autologin is still enabled"
+[[ -L $MNT/etc/systemd/system/timers.target.wants/nexus-auto-upgrade.timer ]] || die "nexus-auto-upgrade.timer is not enabled"
 
 log "Reverting build-only settings, preparing the first boot on the device"
 setcfg AUTO_SETUP_NET_ETHERNET_ENABLED 1
@@ -270,7 +273,7 @@ nexus image for the **Radxa CM3 IO board**
 | Base | \`$DIETPI_IMAGE\` (DietPi $DIETPI_VERSION) |
 | Kernel | Radxa \`$KVER\` |
 | Bootloader | \`u-boot-$RADXA_PRODUCT\` |
-| Tridex software | \`$NEXUS_PACKAGES\` (captive portal, web panel :8080, web terminal :7681) |
+| Tridex software | \`$NEXUS_PACKAGES\` (captive portal, web panel :8080, web terminal :7681), updated hourly via unattended-upgrades |
 | Hostname | \`$NEXUS_HOSTNAME\` |
 | User | \`$NEXUS_USER\` without a password: no login until the first password is set; root locked |
 

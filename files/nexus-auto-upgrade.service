@@ -1,0 +1,15 @@
+[Unit]
+Description=nexus: install new Tridex Nexus package releases
+Documentation=man:unattended-upgrade(8)
+Wants=network-online.target
+After=network-online.target
+# Never run inside the build container (would collide with the DietPi first-run setup)
+ConditionVirtualization=!container
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/apt-get -q update
+ExecStart=/usr/bin/unattended-upgrade
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=1h
