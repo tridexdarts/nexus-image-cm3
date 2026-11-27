@@ -16,7 +16,7 @@ apt pinning allows **only these packages** from the Radxa repositories. Everythi
 
 ## Result
 
-- **Tridex Nexus software** from `https://tridexdarts.github.io/nexus-apt/`: the `nexus` package with Wi-Fi setup through a captive portal (comitup, hotspot `Nexus-<nnn>`), a web panel (port 8080) and a web terminal (port 7681). New releases are installed automatically: `nexus-auto-upgrade.timer` checks every hour and runs `unattended-upgrade`, restricted to the Nexus repository (`/etc/apt/apt.conf.d/52nexus-unattended-upgrades`). Configurable in `config.env` (`NEXUS_PACKAGES`).
+- **Tridex Nexus software** from `https://tridexdarts.github.io/nexus-apt/`: the `nexus` package with Wi-Fi setup through a captive portal (comitup, hotspot `Nexus-<nnn>`), a web panel (port 8080) and a web terminal (port 7681). New releases are installed automatically: `nexus-auto-upgrade.timer` starts `unattended-upgrade` every night between 04:00 and 05:00 Berlin time (missed runs are not caught up later), restricted to the Nexus repository (`/etc/apt/apt.conf.d/52nexus-unattended-upgrades`). Configurable in `config.env` (`NEXUS_PACKAGES`).
 - Hostname `nexus`, user `tridex`, member of the hardware groups.
 - **No login is possible until the first password is set.** In the image `tridex` has no password, no SSH keys and no passwordless `sudo`, and `root` is locked. The first password will be set by a captive portal later. Because the image contains no secrets, the repository and its releases are public.
 - `root` is locked: no login over SSH or on the console. SSH only allows `tridex`.
@@ -72,6 +72,6 @@ All settings are in [`config.env`](config.env).
 | `build.sh` | Download, checksums, partitions, chroot, first-run container, bootloader, shrinking, compression |
 | `files/chroot-setup.sh` | Runs in the aarch64 chroot: Radxa BSP, Armbian removal, `extlinux.conf`, SSH, Nexus packages, user, hostname |
 | `files/nexus-firstboot*` | First-boot service: SSH host keys and `machine-id` |
-| `files/nexus-auto-upgrade.*`, `files/52nexus-unattended-upgrades` | Hourly automatic updates of the Nexus packages |
+| `files/nexus-auto-upgrade.*`, `files/52nexus-unattended-upgrades` | Nightly automatic updates of the Nexus packages (04:00-05:00 Europe/Berlin) |
 | `files/Automation_Custom_Script.sh` | Final step of the DietPi first-run setup: delete `dietpi`, lock `root` |
 | `.github/workflows/build.yml` | Build, upload artifacts, publish releases |

@@ -93,7 +93,7 @@ apt-get update
 "${APT[@]}" install $NEXUS_PACKAGES
 rm -f /root/nexus-archive-keyring.deb
 
-log "Automatic updates of the Tridex Nexus packages (unattended-upgrades, hourly)"
+log "Automatic updates of the Tridex Nexus packages (unattended-upgrades, nightly 04:00-05:00 Europe/Berlin)"
 "${APT[@]}" install unattended-upgrades
 # Only nexus-auto-upgrade.timer installs updates; keep Debian's apt-daily timers out of it
 systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true

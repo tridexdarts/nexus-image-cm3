@@ -273,7 +273,7 @@ nexus image for the **Radxa CM3 IO board**
 | Base | \`$DIETPI_IMAGE\` (DietPi $DIETPI_VERSION) |
 | Kernel | Radxa \`$KVER\` |
 | Bootloader | \`u-boot-$RADXA_PRODUCT\` |
-| Tridex software | \`$NEXUS_PACKAGES\` (captive portal, web panel :8080, web terminal :7681), updated hourly via unattended-upgrades |
+| Tridex software | \`$NEXUS_PACKAGES\` (captive portal, web panel :8080, web terminal :7681), updated nightly 04:00-05:00 Europe/Berlin via unattended-upgrades |
 | Hostname | \`$NEXUS_HOSTNAME\` |
 | User | \`$NEXUS_USER\` without a password: no login until the first password is set; root locked |
 

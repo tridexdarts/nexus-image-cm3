@@ -1,11 +1,12 @@
 [Unit]
-Description=nexus: check hourly for new Tridex Nexus package releases
+Description=nexus: install new Tridex Nexus package releases nightly (04:00-05:00 Europe/Berlin)
 
 [Timer]
-OnBootSec=5min
-OnUnitActiveSec=1h
-RandomizedDelaySec=10min
-Persistent=true
+# Start at a random time between 04:00 and 04:55 Berlin time, independent of the system time zone
+OnCalendar=*-*-* 04:00:00 Europe/Berlin
+RandomizedDelaySec=55min
+# Do not catch up missed runs after boot: updates only ever start inside the night window
+Persistent=false
 
 [Install]
 WantedBy=timers.target
