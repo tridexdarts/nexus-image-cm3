@@ -1,0 +1,21 @@
+# Build only: installed by build.sh for the first-run container and removed afterwards.
+# DietPi normally starts its first-run setup from the root autologin on the console
+# (dietpi-login). That does not work in the build container, so run dietpi-login here
+# non-interactively. It exits after stage 0 because the host kernel does not match the
+# image (G_CHECK_KERNEL), hence the loop until install stage 2 is reached.
+[Unit]
+Description=nexus build: run the DietPi first-run setup non-interactively
+ConditionVirtualization=container
+After=dietpi-firstboot.service dietpi-postboot.service
+
+[Service]
+Type=oneshot
+Environment=G_INTERACTIVE=0 TERM=dumb HOME=/root
+StandardInput=null
+StandardOutput=journal+console
+StandardError=journal+console
+ExecStart=/bin/bash -c 'for i in 1 2 3 4; do [ "$(cat /boot/dietpi/.install_stage)" = 2 ] && exit 0; /bin/bash /boot/dietpi/dietpi-login || true; done; [ "$(cat /boot/dietpi/.install_stage)" = 2 ]'
+TimeoutStartSec=infinity
+
+[Install]
+WantedBy=multi-user.target

@@ -149,7 +149,7 @@ setcfg CONFIG_SERIAL_CONSOLE_ENABLE 1
 setcfg AUTO_SETUP_SWAPFILE_SIZE 0              # no swap file in the image
 # Random password for root/dietpi during the first-run setup. DietPi encrypts it;
 # afterwards Automation_Custom_Script.sh locks root and deletes dietpi.
-setcfg AUTO_SETUP_GLOBAL_PASSWORD "$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32 || true)"
+setcfg AUTO_SETUP_GLOBAL_PASSWORD "$(tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 32 || true)"
 install -m 700 files/Automation_Custom_Script.sh "$MNT/boot/Automation_Custom_Script.sh"
 
 # ---------------------------------------------------------------------------
@@ -164,23 +164,39 @@ for u in $BUILD_BLOCKED_UNITS; do
 	printf '[Unit]\nConditionVirtualization=!container\n' > "$MNT/etc/systemd/system/$u.d/nexus-build.conf"
 done
 
+# Runs dietpi-login non-interactively (see the unit file for details)
+install -m 644 files/nexus-build-firstrun.service "$MNT/etc/systemd/system/nexus-build-firstrun.service"
+ln -sf /etc/systemd/system/nexus-build-firstrun.service "$MNT/etc/systemd/system/multi-user.target.wants/"
+
 FIRSTRUN_LOG=$WORK/dietpi-firstrun-container.log
-systemd-nspawn -q --boot -D "$MNT" -M nexus-build --resolv-conf=bind-host --timezone=off \
-	--console=read-only > "$FIRSTRUN_LOG" 2>&1 &
-NSPAWN_PID=$!
-deadline=$(( SECONDS + ${FIRSTRUN_TIMEOUT_MIN:-180} * 60 ))
+DIETPI_LOG=$MNT/var/lib/dietpi/logs/dietpi-firstrun-setup.log
+: > "$FIRSTRUN_LOG"
+start_container() {
+	systemd-nspawn -q --boot -D "$MNT" -M nexus-build --resolv-conf=bind-host --timezone=off \
+		--console=read-only >> "$FIRSTRUN_LOG" 2>&1 &
+	NSPAWN_PID=$!
+}
+start_container
+boots=1
+deadline=$(( SECONDS + ${FIRSTRUN_TIMEOUT_MIN:-120} * 60 ))
 stage=
 while :; do
 	stage=$(cat "$MNT/boot/dietpi/.install_stage" 2>/dev/null || true)
 	[[ $stage == 2 ]] && break
 	if ! kill -0 "$NSPAWN_PID" 2>/dev/null; then
-		tail -n 80 "$FIRSTRUN_LOG"; die "Container exited before the setup finished (install_stage=$stage)"
+		# DietPi may reboot between the stages; boot the container again
+		(( boots < 4 )) || { tail -n 80 "$FIRSTRUN_LOG"; die "Container keeps exiting before the setup finished (install_stage=$stage)"; }
+		log "  container exited at install_stage=$stage, booting it again"
+		start_container
+		boots=$(( boots + 1 ))
 	fi
 	if (( SECONDS > deadline )); then
-		tail -n 80 "$FIRSTRUN_LOG"; kill "$NSPAWN_PID"; die "First-run setup timed out (install_stage=$stage)"
+		tail -n 80 "$FIRSTRUN_LOG"; tail -n 40 "$DIETPI_LOG" 2>/dev/null
+		kill "$NSPAWN_PID"; die "First-run setup timed out (install_stage=$stage)"
 	fi
 	sleep 30
-	log "  ... first-run setup in progress (install_stage=${stage:-?}, $(( SECONDS / 60 )) min)"
+	last=$(tail -n 1 "$DIETPI_LOG" 2>/dev/null | tr -d '\r' | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | cut -c1-120 || true)
+	log "  ... install_stage=${stage:-?}, $(( SECONDS / 60 )) min: ${last:--}"
 done
 log "First-run setup finished, shutting down the container"
 sleep 20   # let DietPi finish its last steps (autostart, cleanup)
@@ -204,6 +220,7 @@ ls "$MNT"/etc/systemd/system/*/dietpi-autologin.conf 2>/dev/null && die "Root au
 [[ -L $MNT/etc/systemd/system/timers.target.wants/nexus-auto-upgrade.timer ]] || die "nexus-auto-upgrade.timer is not enabled"
 
 log "Reverting build-only settings, preparing the first boot on the device"
+rm -f "$MNT/etc/systemd/system/nexus-build-firstrun.service" "$MNT/etc/systemd/system/multi-user.target.wants/nexus-build-firstrun.service"
 setcfg AUTO_SETUP_NET_ETHERNET_ENABLED 1
 for u in $BUILD_BLOCKED_UNITS; do
 	rm -f "$MNT/etc/systemd/system/$u.d/nexus-build.conf"
