@@ -12,8 +12,9 @@ After=dietpi-firstboot.service dietpi-postboot.service
 Type=oneshot
 Environment=G_INTERACTIVE=0 TERM=dumb HOME=/root
 StandardInput=null
-StandardOutput=journal+console
-StandardError=journal+console
+# Journal only: on the console DietPi assumes a terminal and fails to query its width
+StandardOutput=journal
+StandardError=journal
 ExecStart=/bin/bash -c 'for i in 1 2 3 4; do [ "$(cat /boot/dietpi/.install_stage)" = 2 ] && exit 0; /bin/bash /boot/dietpi/dietpi-login || true; done; [ "$(cat /boot/dietpi/.install_stage)" = 2 ]'
 TimeoutStartSec=infinity
 

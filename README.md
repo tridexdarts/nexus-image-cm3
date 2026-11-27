@@ -73,6 +73,6 @@ All settings are in [`config.env`](config.env).
 | `files/chroot-setup.sh` | Runs in the aarch64 chroot: Radxa BSP, Armbian removal, `extlinux.conf`, SSH, Nexus packages, user, hostname |
 | `files/nexus-firstboot*` | First-boot service: SSH host keys and `machine-id` |
 | `files/nexus-auto-upgrade.*`, `files/52nexus-unattended-upgrades` | Nightly automatic updates of the Nexus packages (04:00-05:00 Europe/Berlin) |
-| `files/nexus-build-firstrun.service` | Build only: runs the DietPi first-run setup non-interactively inside the container |
+| `files/nexus-build-firstrun.service`, `files/nexus-build-ping` | Build only: run the DietPi first-run setup non-interactively inside the container; replace `ping`, which GitHub runners block |
 | `files/Automation_Custom_Script.sh` | Final step of the DietPi first-run setup: delete `dietpi`, lock `root` |
 | `.github/workflows/build.yml` | Build, upload artifacts, publish releases |

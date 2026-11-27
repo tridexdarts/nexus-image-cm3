@@ -1,0 +1,5 @@
+#!/bin/sh
+# Build only: installed as /usr/local/sbin/ping in the first-run container and removed afterwards.
+# GitHub-hosted runners block outgoing ICMP, so DietPi's connectivity check (ping) always fails
+# there. Report the connection as working if HTTPS works.
+curl -fsS --max-time 10 -o /dev/null https://dietpi.com/ || curl -fsS --max-time 10 -o /dev/null https://deb.debian.org/

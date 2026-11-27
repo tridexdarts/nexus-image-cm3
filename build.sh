@@ -167,6 +167,8 @@ done
 # Runs dietpi-login non-interactively (see the unit file for details)
 install -m 644 files/nexus-build-firstrun.service "$MNT/etc/systemd/system/nexus-build-firstrun.service"
 ln -sf /etc/systemd/system/nexus-build-firstrun.service "$MNT/etc/systemd/system/multi-user.target.wants/"
+# Replaces ping inside the container (see the script for details)
+install -m 755 files/nexus-build-ping "$MNT/usr/local/sbin/ping"
 
 FIRSTRUN_LOG=$WORK/dietpi-firstrun-container.log
 DIETPI_LOG=$MNT/var/lib/dietpi/logs/dietpi-firstrun-setup.log
@@ -220,7 +222,8 @@ ls "$MNT"/etc/systemd/system/*/dietpi-autologin.conf 2>/dev/null && die "Root au
 [[ -L $MNT/etc/systemd/system/timers.target.wants/nexus-auto-upgrade.timer ]] || die "nexus-auto-upgrade.timer is not enabled"
 
 log "Reverting build-only settings, preparing the first boot on the device"
-rm -f "$MNT/etc/systemd/system/nexus-build-firstrun.service" "$MNT/etc/systemd/system/multi-user.target.wants/nexus-build-firstrun.service"
+rm -f "$MNT/etc/systemd/system/nexus-build-firstrun.service" "$MNT/etc/systemd/system/multi-user.target.wants/nexus-build-firstrun.service" \
+	"$MNT/usr/local/sbin/ping"
 setcfg AUTO_SETUP_NET_ETHERNET_ENABLED 1
 for u in $BUILD_BLOCKED_UNITS; do
 	rm -f "$MNT/etc/systemd/system/$u.d/nexus-build.conf"
