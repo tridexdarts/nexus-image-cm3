@@ -36,6 +36,8 @@ mkdir -p "$WORK" "$OUT" "$MNT"
 
 cleanup() {
 	set +e
+	# Keep DietPi's first-run log for the build-logs artifact, also on failure or cancellation
+	[[ -f $MNT/var/lib/dietpi/logs/dietpi-firstrun-setup.log ]] && cp "$MNT/var/lib/dietpi/logs/dietpi-firstrun-setup.log" "$OUT/"
 	if [[ $NSPAWN_PID ]]; then kill -TERM "$NSPAWN_PID"; sleep 15; kill -KILL "$NSPAWN_PID" 2>/dev/null; wait "$NSPAWN_PID" 2>/dev/null; fi
 	if mountpoint -q "$MNT"; then umount -R "$MNT" || umount -lR "$MNT"; fi
 	[[ $LOOP ]] && losetup -d "$LOOP"
@@ -182,6 +184,7 @@ start_container
 boots=1
 deadline=$(( SECONDS + ${FIRSTRUN_TIMEOUT_MIN:-120} * 60 ))
 stage=
+shown=0
 while :; do
 	stage=$(cat "$MNT/boot/dietpi/.install_stage" 2>/dev/null || true)
 	[[ $stage == 2 ]] && break
@@ -194,11 +197,17 @@ while :; do
 	fi
 	if (( SECONDS > deadline )); then
 		tail -n 80 "$FIRSTRUN_LOG"; tail -n 40 "$DIETPI_LOG" 2>/dev/null
+		journalctl --directory="$MNT/var/log/journal" -u nexus-build-firstrun --no-pager 2>/dev/null | tail -n 60
 		kill "$NSPAWN_PID"; die "First-run setup timed out (install_stage=$stage)"
 	fi
 	sleep 30
-	last=$(tail -n 1 "$DIETPI_LOG" 2>/dev/null | tr -d '\r' | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | cut -c1-120 || true)
-	log "  ... install_stage=${stage:-?}, $(( SECONDS / 60 )) min: ${last:--}"
+	log "  ... install_stage=${stage:-?}, $(( SECONDS / 60 )) min"
+	# Print the DietPi log lines written since the last check
+	if [[ -f $DIETPI_LOG ]]; then
+		total=$(wc -l < "$DIETPI_LOG")
+		(( total > shown )) && tail -n +"$(( shown + 1 ))" "$DIETPI_LOG" | tr -d '\r' | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/^/  | /' | cut -c1-200
+		shown=$total
+	fi
 done
 log "First-run setup finished, shutting down the container"
 sleep 20   # let DietPi finish its last steps (autostart, cleanup)
