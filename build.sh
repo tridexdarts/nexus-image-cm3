@@ -160,7 +160,10 @@ log "6/9 Running the DietPi first-run setup in a booted container (slow under qe
 # interfaces there. The eth0 DHCP configuration from the image stays unchanged.
 setcfg AUTO_SETUP_NET_ETHERNET_ENABLED 0
 setcfg AUTO_SETUP_NET_WIFI_ENABLED 0
-BUILD_BLOCKED_UNITS="networking.service ifup@.service NetworkManager.service NetworkManager-wait-online.service NetworkManager-dispatcher.service wpa_supplicant.service ModemManager.service comitup.service comitup-web.service"
+# Services that would touch the host network or bind ports the build host already uses
+# (the runner's own sshd holds port 22). Blocked only inside the container: starting them
+# then succeeds as "condition failed" instead of failing DietPi's software install step.
+BUILD_BLOCKED_UNITS="networking.service ifup@.service NetworkManager.service NetworkManager-wait-online.service NetworkManager-dispatcher.service wpa_supplicant.service ModemManager.service comitup.service comitup-web.service ssh.service ssh.socket nexus-panel.service nexus-web-terminal.service"
 for u in $BUILD_BLOCKED_UNITS; do
 	mkdir -p "$MNT/etc/systemd/system/$u.d"
 	printf '[Unit]\nConditionVirtualization=!container\n' > "$MNT/etc/systemd/system/$u.d/nexus-build.conf"
